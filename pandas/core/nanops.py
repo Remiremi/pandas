@@ -76,7 +76,7 @@ class bottleneck_switch(object):
                         # wrap the 0's if needed
                         if is_timedelta64_dtype(values):
                             return lib.Timedelta(0)
-                        return 0
+                        return values.dtype.type(0)
                     else:
                         result_shape = (values.shape[:axis] +
                                         values.shape[axis + 1:])

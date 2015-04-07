@@ -2592,6 +2592,12 @@ class TestSeries(tm.TestCase, CheckNameIntegration):
                 self.assertRaisesRegexp(NotImplementedError, name, f,
                                         self.series, numeric_only=True)
 
+            # Test type of empty Series
+            s = Series()
+            self.assertEqual(s.dtype, s.sum().dtype)
+            s = Series(dtype=np.int64)
+            self.assertEqual(s.dtype, s.sum().dtype)
+
         testit()
 
         try:
