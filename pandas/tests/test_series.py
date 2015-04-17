@@ -2592,12 +2592,6 @@ class TestSeries(tm.TestCase, CheckNameIntegration):
                 self.assertRaisesRegexp(NotImplementedError, name, f,
                                         self.series, numeric_only=True)
 
-            # Test type of empty Series
-            s = Series()
-            self.assertEqual(s.dtype, s.sum().dtype)
-            s = Series(dtype=np.int64)
-            self.assertEqual(s.dtype, s.sum().dtype)
-
         testit()
 
         try:
@@ -3399,15 +3393,35 @@ class TestSeries(tm.TestCase, CheckNameIntegration):
         # GH 7869
         # consistency on empty
 
-        # float
-        result = Series(dtype=float).sum()
-        self.assertEqual(result,0)
+        # Test type of empty Series
 
-        result = Series(dtype=float).mean()
-        self.assertTrue(isnull(result))
+        ops = ['median', 'mean', 'sum', 'prod']
 
-        result = Series(dtype=float).median()
-        self.assertTrue(isnull(result))
+        # First test numpy types
+        for dtype in ['int8', 'int16', 'int32', 'int64', 'uint8', 'uint16', 'uint32', 'uint64', 'float16', 'float32',
+                      'float64', 'complex64', 'complex128']:
+            s = Series(dtype=dtype)
+            for op in ops:
+                result = getattr(s, op)()
+                np_type = getattr(np, dtype)
+                reference = getattr(np, op)(np_type([]))
+                if np.isnan(reference):
+                    self.assertTrue(np.isnan(result), msg="Expecting nan, got %s" % (str(result)))
+                else:
+                    self.assertEqual(result.dtype, reference.dtype, msg="Failed to %s on %s: returned type %s, expected %s" % (op, dtype, str(result.dtype), str(reference.dtype)))
+                    self.assertEqual(result, reference,
+                                     msg='Different result for empty %s with dtype=%s: expected %s but received %s' %
+                                         (op, dtype, str(reference), str(result)))
+
+        # Test str/unicode types
+        str_series = Series(dtype='str')
+        unicode_series = Series(dtype='unicode')
+        for op in ['median', 'mean', 'prod']:
+            print op
+            self.assertTrue(np.isnan(getattr(str_series, op)()))
+            self.assertTrue(np.isnan(getattr(unicode_series, op)()))
+        self.assertEqual('', str_series.sum())
+        self.assertEqual('', unicode_series.sum())
 
         # timedelta64[ns]
         result = Series(dtype='m8[ns]').sum()
